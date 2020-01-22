@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.0.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+
+
+	<!-- Datasource to use in memory H2 database with an external file. The 
+		URL jdbc:h2:file:/Users/enirtium/H2/test, creates the test.h2.db file in 
+		the file system under specified directory -->
+	<!-- <bean id="dataSource" class="eimsb.jdbc.datasource.H2BasicDataSource" 
+		init-method="init" destroy-method="close"> <property name="driverClassName" 
+		value="org.h2.Driver" /> <property name="url" value="jdbc:h2:file:/Users/enirtium/H2/test;DB_CLOSE_ON_EXIT=FALSE" 
+		/> <property name="username" value="" /> <property name="password" value="" 
+		/> <property name="initializeSchema" value="true" /> <property name="schemaFile" 
+		value="schema-h2.sql" /> </bean> -->
+
+	<!-- Same as above, but uses log4jdbc driver and URL syntax to log SQL to 
+		logs -->
+	<bean id="dataSource"
+		class="eimsb.jdbc.datasource.H2BasicDataSource" init-method="init"
+		destroy-method="close">
+		<property name="driverClassName"
+			value="net.sf.log4jdbc.DriverSpy" />
+		<property name="url"
+			value="jdbc:log4jdbc:h2:file:/Users/enirtium/H2/test;DB_CLOSE_ON_EXIT=FALSE" />
+		<property name="username" value="sa" />
+		<property name="password" value="" />
+		<property name="initializeSchema" value="true" />
+		<property name="schemaFile" value="schema-h2.sql" />
+	</bean>
+
+
+	<bean id="transactionManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<constructor-arg ref="dataSource" />
+	</bean>
+
+	<!-- stored job-meta in database -->
+	<bean id="jobRepository"
+		class="org.springframework.batch.core.repository.support.JobRepositoryFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="transactionManager" ref="transactionManager" />
+		<property name="databaseType" value="h2" />
+	</bean>
+
+	<bean id="jobLauncher"
+		class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
+		<property name="jobRepository" ref="jobRepository" />
+	</bean>
+
+	<!-- Monitoring 
+	  See SpringBatch JobExplorer and JobOperator APIs
+	-->
+
+	<bean class="org.springframework.jmx.export.MBeanExporter">
+		<property name="beans">
+			<map>
+				<entry key="spring:service=batch,bean=jobOperator">
+					<bean
+						class="org.springframework.aop.framework.ProxyFactoryBean">
+						<property name="target" ref="jobOperator" />
+						<property name="interceptorNames"
+							value="exceptionTranslator" />
+					</bean>
+				</entry>
+			</map>
+		</property>
+		<property name="assembler">
+			<bean
+				class="org.springframework.jmx.export.assembler.InterfaceBasedMBeanInfoAssembler">
+				<property name="interfaceMappings">
+					<map>
+						<entry key="spring:service=batch,bean=jobOperator"
+							value="org.springframework.batch.core.launch.JobOperator" />
+					</map>
+				</property>
+			</bean>
+		</property>
+
+	</bean>
+	
+	<bean id="jobExplorer" class="org.springframework.batch.core.explore.support.JobExplorerFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+
+
+	<bean id="jobRegistry"
+		class="org.springframework.batch.core.configuration.support.MapJobRegistry" />
+	
+	<bean id="jobOperator"
+		class="org.springframework.batch.core.launch.support.SimpleJobOperator">
+		<property name="jobExplorer" ref="jobExplorer" />
+		<property name="jobRepository" ref="jobRepository" />
+		<property name="jobRegistry" ref="jobRegistry" />
+		<property name="jobLauncher">
+			<bean parent="jobLauncher">
+				<property name="taskExecutor">
+					<bean
+						class="org.springframework.core.task.SimpleAsyncTaskExecutor" />
+				</property>
+			</bean>
+		</property>
+	</bean>
+
+	<bean id="exceptionTranslator"
+		class="org.springframework.batch.core.launch.support.RuntimeExceptionTranslator" />
+
+
+
+
+
+</beans>

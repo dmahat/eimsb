@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:batch="http://www.springframework.org/schema/batch"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	http://www.springframework.org/schema/batch 
+	http://www.springframework.org/schema/batch/spring-batch-3.0.xsd">
+	
+	<bean id="batchMonitoringListener" class="eimsb.batch.support.listeners.EIMBatchMonitoringListener" />
+
+    <!--  a Simple Batch Job composed of a File Reader and File Writer -->
+	<job id="importProducts" xmlns="http://www.springframework.org/schema/batch">
+		<step id="readWriteProducts">
+			<tasklet>
+				<chunk reader="reader" writer="productItemWriter" commit-interval="3" skip-limit="5">
+					<skippable-exception-classes>
+						<include class="org.springframework.batch.item.file.FlatFileParseException" />
+					</skippable-exception-classes>
+				</chunk>
+			</tasklet>			
+		</step>
+		<listeners xmlns="http://www.springframework.org/schema/batch">
+		  <listener ref="batchMonitoringListener" />
+		</listeners>
+	</job>
+	
+
+
+	<bean id="reader" class="org.springframework.batch.item.file.FlatFileItemReader" scope="step">
+		<property name="resource" value="file:#{jobParameters['targetDirectory']+jobParameters['inputFile']}" />
+		<property name="linesToSkip" value="1" />
+		<property name="lineMapper">
+			<bean class="org.springframework.batch.item.file.mapping.DefaultLineMapper">
+				<property name="lineTokenizer">
+					<bean class="org.springframework.batch.item.file.transform.DelimitedLineTokenizer">
+						<property name="names" value="PRODUCT_ID,NAME,DESCRIPTION,PRICE" />
+					</bean>
+				</property>
+				<property name="fieldSetMapper">
+					<bean class="eimsb.batch.ProductFieldSetMapper" />
+				</property>
+			</bean>
+		</property>
+	</bean>
+	
+  
+  <bean id="productItemWriter" class="org.springframework.batch.item.support.CompositeItemWriter">
+    <property name="delegates">
+      <list>
+        <ref local="noOpwriter"/>
+        <ref local="delimitedProductItemWriter"/>
+      </list>
+    </property>
+  </bean>
+
+ 
+ 	<bean id="delimitedProductItemWriter" class="org.springframework.batch.item.file.FlatFileItemWriter" scope="step">
+ 		<property name="resource" value="file:#{jobParameters['targetDirectory']+jobParameters['outputFile']}" />
+ 		 <property name="appendAllowed" value="true" />
+		<property name="lineAggregator">
+      <bean class="org.springframework.batch.item.file.transform.DelimitedLineAggregator">
+        <property name="delimiter" value="|" />
+       
+        <property name="fieldExtractor">
+          <bean class="org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor">
+            <property name="names" value="id,price,name" />
+          </bean>
+        </property>
+      </bean>
+     </property>
+ 	</bean>
+ 	
+	
+	<bean id="noOpwriter" class="eimsb.batch.NoOpWriter">
+
+	</bean>
+
+</beans>
