@@ -7,9 +7,9 @@ A Sample Spring Batch Application that uses H2 in-memory database with an extern
 ### Prerequisites
 Prior to running any mvn commands, the H2 URL specified for the datasource bean in the file /src/test/resources/test-h2-config.xml
 
-'''
+```
 <property name="url" value="jdbc:log4jdbc:h2:file:/Users/xxx/H2/test;DB_CLOSE_ON_EXIT=FALSE"> 
-'''
+```
 must be changed to a folder in local file system.
 
 ### Installing
