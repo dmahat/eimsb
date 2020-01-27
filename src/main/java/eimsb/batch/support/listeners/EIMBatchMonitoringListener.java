@@ -15,18 +15,20 @@ public class EIMBatchMonitoringListener implements JobExecutionListener{
 	
 	@Override
 	public void beforeJob(JobExecution jobExecution) {
-		logger.info("Started job "+jobExecution);
+		logger.info("Job :"+ jobExecution.getJobId() + " Started");
 		
 	}
 
 	@Override
 	public void afterJob(JobExecution jobExecution) {
-		logger.info("Ended job "+jobExecution);
 		if(BatchStatus.FAILED == jobExecution.getStatus()) {
-			logger.error(jobExecution.getJobId() + "FAILED" , (jobExecution.getAllFailureExceptions()).get(0));
+			logger.error("Job :"+ jobExecution.getJobId() + " FAILED" , (jobExecution.getAllFailureExceptions()).get(0));
 		}
 		else if(BatchStatus.ABANDONED == jobExecution.getStatus()) {
-			logger.warn(jobExecution.getJobId() + " was abondoned" );
+			logger.warn("Job :"+ jobExecution.getJobId() + " was abondoned" );
+		}
+		else {
+			logger.info("Job :"+ jobExecution.getJobId() + " Completed with Status "+ jobExecution.getStatus());
 		}
 		
 	}
