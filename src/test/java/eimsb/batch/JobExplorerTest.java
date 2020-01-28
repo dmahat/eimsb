@@ -3,9 +3,12 @@ package eimsb.batch;
 
 import java.util.List;
 
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.slf4j.MDC;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobInstance;
 import org.springframework.batch.core.JobParametersBuilder;
@@ -32,6 +35,17 @@ public class JobExplorerTest {
 	
 	@Autowired
 	private JobExplorer jobExplorer;
+	
+	@Before
+	public void initLogContext() {
+		MDC.put("correlationId", "cId"+Math.random());
+		MDC.put("requestId", "rId"+Math.random());
+	}
+	
+	@After
+	public void clearLogContext() {
+		MDC.clear();
+	}
 	
 	/*
 	 * Example of using the JobExplorer API to get Job History

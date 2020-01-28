@@ -1,9 +1,12 @@
 package eimsb.batch;
 
 
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.slf4j.MDC;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.JobParametersInvalidException;
@@ -26,7 +29,17 @@ public class H2ConfigTest {
 	@Autowired
 	private Job job;
 
-
+	@Before
+	public void initLogContext() {
+		MDC.put("correlationId", "cId"+Math.random());
+		MDC.put("requestId", "rId"+Math.random());
+	}
+	
+	@After
+	public void clearLogContext() {
+		MDC.clear();
+	}
+	
 	@Test 
 	public void importProducts() {	
 		try {
